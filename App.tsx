@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   Dimensions,
+  FlatList,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -20,6 +21,8 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import MapView from 'react-native-maps';
+import { Provider } from 'react-redux';
+import store from './store';
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -60,92 +63,116 @@ function App(): React.JSX.Element {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const [newRegion, setNewRegion] = useState<any>()
+  const [selectedAddress, setNewSelectedAddress] = useState<any>(store.getState().selectedAddress)
+  const [dd, ccc] = useState<any>(['dddd','pppppp','ooooo'])
+  const [refresh, setRefresh] = useState<boolean>(false)
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.white,
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingTop:10,
-          }}>
-          <Section title="Maybank">
-            <Text style={styles.highlight}>Google Autocomplete with redux </Text>
-          </Section>
-          <View style={[styles.sectionContainer]}>
-            <GooglePlacesAutocomplete
-              placeholder='Search'
-              onPress={(data, details = null) => {
-                console.log(data, details);
+    <Provider store={store}>
+      <SafeAreaView style={backgroundStyle}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={backgroundStyle.backgroundColor}
+        />
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          style={backgroundStyle}>
+          <View
+            style={{
+              backgroundColor: isDarkMode ? Colors.black : Colors.white,
+              paddingTop:10,
+            }}>
+            <Section title="Maybank">
+              <Text style={styles.highlight}>Google Autocomplete with redux </Text>
+            </Section>
+            <View style={[styles.sectionContainer]}>
+              <GooglePlacesAutocomplete
+                placeholder='Search'
+                onPress={(data, details = null) => {
+                  
 
-                mapRef.current.animateToRegion({
-                  latitude: details?.geometry.location.lat,
-                  longitude: details?.geometry.location.lng,
-                  latitudeDelta: 0.003,
-                  longitudeDelta: 0.003
-                })
-              }}
-              query={{
-                key: 'AIzaSyASwyiLs7UmIZXwf7TnKTn2Zg8cocyybaM',
-                language: 'en',
-              }}
-              fetchDetails={true}
-              styles={styles.autocomplete}
-            />
-          </View>
+                  let selectedAddressCurrent = selectedAddress
+                  selectedAddressCurrent.push(data?.structured_formatting.main_text);
+                  // setNewSelectedAddress(selectedAddressCurrent);
+                  store.dispatch({ 
+                    type: 'ADD_SELECTED_ADDRESS', 
+                    payload: selectedAddressCurrent
+                  })
+                  setRefresh(!refresh)
+                  console.log(store.getState().selectedAddress);
 
-          <View style={[styles.containerMapMain]}>
-            <View style={[styles.containerMapSub]}>
-              <MapView
-                ref={mapRef}
-                // onRegionChangeComplete={onRegionChange}
-                initialRegion={region}
-                zoomEnabled={true}
-                scrollEnabled={true}
-                showsScale={true}
-                zoomControlEnabled={true}
-                zoomTapEnabled={true}
-                // mapType={'satellite'}
-                rotateEnabled={true}
-                loadingEnabled={true}
-                showsCompass={false}
-                style={styles.map}
+                  mapRef.current.animateToRegion({
+                    latitude: details?.geometry.location.lat,
+                    longitude: details?.geometry.location.lng,
+                    latitudeDelta: 0.003,
+                    longitudeDelta: 0.003
+                  })
+                }}
+                query={{
+                  key: 'AIzaSyASwyiLs7UmIZXwf7TnKTn2Zg8cocyybaM',
+                  language: 'en',
+                }}
+                fetchDetails={true}
+                styles={styles.autocomplete}
               />
             </View>
-          </View>
-          
-          <Section title="See Your History">
-            <View 
-              style={{
-                borderWidth:1,
-                borderRadius:15,
-                borderColor:'grey',
-                height: Dimensions.get('window').height/5.5,  
-                width: Dimensions.get('window').width/1.14,             
-                padding:10,
-              }}
-            >
-              <Text>sasasa</Text>
-              <Text>sasasa</Text>
-              <Text>sasasa</Text>
-              <Text>sasasa</Text>
-            </View>
-          </Section>
 
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            <View style={[styles.containerMapMain]}>
+              <View style={[styles.containerMapSub]}>
+                <MapView
+                  ref={mapRef}
+                  // onRegionChangeComplete={onRegionChange}
+                  initialRegion={region}
+                  zoomEnabled={true}
+                  scrollEnabled={true}
+                  showsScale={true}
+                  zoomControlEnabled={true}
+                  zoomTapEnabled={true}
+                  // mapType={'satellite'}
+                  rotateEnabled={true}
+                  loadingEnabled={true}
+                  showsCompass={false}
+                  style={styles.map}
+                />
+              </View>
+            </View>
+            
+            <Section title="See Your History">
+              <View 
+                style={{
+                  borderWidth:1,
+                  borderRadius:15,
+                  borderColor:'grey',
+                  height: Dimensions.get('window').height/5.5,  
+                  width: Dimensions.get('window').width/1.14,             
+                }}
+              >
+                <ScrollView style={{padding:15}}>
+                  <FlatList
+                    data={selectedAddress}
+                    renderItem={({item}) => {
+                      return(
+                          <View style={{padding:10, borderWidth:1, borderRadius:15, borderColor:'grey', marginBottom:10, backgroundColor:'yellow'}}>
+                            <Text>{item}</Text>
+                          </View>
+                      )
+                    }}
+                    keyExtractor={item => item}
+                    extraData={refresh}
+                  />
+                </ScrollView>
+                
+              </View>
+            </Section>
+
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </Provider>
   );
 }
 
